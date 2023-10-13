@@ -1,11 +1,9 @@
 import logging
-import pymongo
 import os
 
 from dotenv import load_dotenv
-
-# load env var into memory
-load_dotenv()
+from pymongo import MongoClient
+from pymongo.database import Database
 
 
 class Director:
@@ -14,10 +12,12 @@ class Director:
     _LOG = None
 
     def __init__(self):
+        # load env var into memory
+        load_dotenv()
         self._LOG = logging.getLogger(self.__class__.__name__)
 
     @property
-    def mongo_client(self):
+    def mongo_client(self) -> MongoClient:
         """
         Creates a connection to the Mongo client
         Returns:
@@ -25,12 +25,12 @@ class Director:
         """
         if self._mongo_client is None:
             self._LOG.info("Connecting to the MongoDB client.")
-            self._mongo_client = pymongo.MongoClient(os.environ.get("MONGO_URI"))
+            self._mongo_client = MongoClient(os.environ.get("MONGO_URI"))
             return self._mongo_client
         else:
             return self._mongo_client
 
-    def create_database(self, database_name="scraps_processing"):
+    def create_database(self, database_name="scraps_processing") -> Database:
         """
         Creates a mongo database instance given a database name
         Args:
