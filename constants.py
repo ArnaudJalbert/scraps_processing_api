@@ -1,2 +1,3 @@
 EMPTY_DATA = "[]"
-SCRAPS_COLLECTION = "scraps_test"
+SCRAPS_COLLECTION = "scraps"
+USER_COLLECTION = "users"

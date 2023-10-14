@@ -1,16 +1,18 @@
 import logging
+import sys
 
 from bson.json_util import dumps
 from bson.errors import InvalidId
 from bson.objectid import ObjectId
-from constants import SCRAPS_COLLECTION, EMPTY_DATA
+from constants import SCRAPS_COLLECTION, EMPTY_DATA, USER_COLLECTION
 from database_director import Director
 from flask import Flask, render_template, request
 
 logging.basicConfig(level=logging.CRITICAL)
 
-director = Director()
-database = director.create_database()
+
+def test_mode():
+    return len(sys.argv) > 1 and sys.argv[1] == "test"
 
 
 def create_app():
@@ -18,6 +20,10 @@ def create_app():
 
 
 app = create_app()
+if test_mode():
+    database = Director().create_database("scraps_processing_test")
+else:
+    database = Director().create_database()
 
 
 @app.route("/")
@@ -32,7 +38,6 @@ def get_scraps():
     Returns:
         str: JSON formatted string with the scraps' data.
     """
-    print(request.args.keys())
     scraps = list(database.get_collection(SCRAPS_COLLECTION).find())
     return dumps(scraps, indent=2), 200
 
@@ -57,13 +62,48 @@ def get_scrap_by_id(_id):
     return dumps(scrap), 200
 
 
-@app.post("/scraps")
-def create_new_scrap():
+@app.put("/scraps")
+def create_scrap():
     """
+    Creates a new scrap.
+    Returns:
+        str: JSON formatted with all the information of the created scrap.
+    """
+    # TODO: Use the url query parameters to create a new scrap
+    url_args = request.args
+
+    # TODO: Pass all arguments to the
+
+
+@app.post("/scraps/<id>")
+def update_scrap():
+    """
+    Updates an existing scrap.
+    Returns:
+        str: JSON formatted string with all the information of the updated scrap.
+    """
+    # TODO: Use the url query parameters to create a new scrap
+    url_args = request.args
+
+    # TODO: Pass all arguments to the
+
+
+@app.get("/user/<name>")
+def get_user_by_name(name):
+    """
+    Retrieves a user with their name.
+    Args:
+        name: Name of the user to be retrieved.
 
     Returns:
-
+        str: JSON formatted string with the scrap data with corresponding id.
     """
+    try:
+        user = list(database.get_collection(USER_COLLECTION).find({"name": name}))
+    except InvalidId:
+        return EMPTY_DATA, 204
+
+    return dumps(user), 200
 
 
 if __name__ == "__main__":
