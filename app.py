@@ -5,7 +5,7 @@ from bson.json_util import dumps
 from bson.errors import InvalidId
 from bson.objectid import ObjectId
 from constants import SCRAPS_COLLECTION, EMPTY_DATA, USER_COLLECTION
-from database_director import Director
+from database_director import Director, DEFAULT_DATABASE_TEST
 from flask import Flask, render_template, request
 
 logging.basicConfig(level=logging.CRITICAL)
@@ -21,7 +21,7 @@ def create_app():
 
 app = create_app()
 if test_mode():
-    database = Director().create_database("scraps_processing_test")
+    database = Director().create_database(DEFAULT_DATABASE_TEST)
 else:
     database = Director().create_database()
 

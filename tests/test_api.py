@@ -55,3 +55,7 @@ class TestAPI(unittest.TestCase):
         print(response.text)
         self.assertEqual(response.text, "")
         self.assertEqual(response.status_code, 204)
+
+
+if __name__ == "__main__":
+    unittest.main()
