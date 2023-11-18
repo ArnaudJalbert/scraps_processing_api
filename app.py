@@ -74,6 +74,8 @@ def create_scrap():
 
     # TODO: Pass all arguments to the
 
+    return "Done", 200
+
 
 @app.post("/scraps/<id>")
 def update_scrap():
