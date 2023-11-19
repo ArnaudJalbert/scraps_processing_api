@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from scrap import Scrap
+from entities.scrap import Scrap
 from typing import Set, Dict
 
 

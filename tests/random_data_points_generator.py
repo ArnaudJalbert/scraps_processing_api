@@ -22,13 +22,17 @@ class RandomDataPointsGenerator:
     _starting_y: np.array = None
     _starting_z: np.array = None
     _points_origin: np.array = None
+    _random_transformation: bool = None
     _points_generated: bool = False
 
-    def __init__(self, points_amount=DEFAULT_POINTS_AMOUNT) -> None:
+    def __init__(
+        self, points_amount=DEFAULT_POINTS_AMOUNT, random_transformation=True
+    ) -> None:
         self.points_amount = points_amount
         # here we can assume that the points are ordered in the way they were captured
         self._points = np.empty(points_amount, dtype=np.ndarray)
         self.angle = 2 * float(math.pi) / float(self.points_amount)
+        self._random_transformation = random_transformation
 
     @property
     def points(self) -> np.ndarray[np.array]:
@@ -39,7 +43,8 @@ class RandomDataPointsGenerator:
         """
         if not self._points_generated:
             self._generate()
-            self._random_transformation()
+            if self._random_transformation:
+                self._make_random_transformation()
             self._points_generated = True
         return self._points
 
@@ -124,7 +129,7 @@ class RandomDataPointsGenerator:
         y = self.starting_y + y_distance
         return np.array([x, y, z], dtype=float)
 
-    def _random_transformation(self) -> None:
+    def _make_random_transformation(self) -> None:
         """
         Rotate all points around the current point origin in a random manner.
         """
@@ -164,10 +169,11 @@ class RandomDataPointsGenerator:
         axe.set_xlabel("X Label")
         axe.set_ylabel("Y Label")
         axe.set_zlabel("Z Label")
+        axe.set_ylim(0, 1)
         axe.set_title("3D Scatter Plot")
         plt.show()
 
 
 if __name__ == "__main__":
-    random_points_generator = RandomDataPointsGenerator()
+    random_points_generator = RandomDataPointsGenerator(random_transformation=False)
     random_points_generator.plot()
