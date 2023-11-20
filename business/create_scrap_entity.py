@@ -9,6 +9,7 @@ from exceptions.scrap_exceptions import (
     InvalidTextileClass,
     MissingTextileColor,
     MissingTextileDimensions,
+    MissingScrapOwner,
 )
 from business.get_textile_classes import get_textile_classes
 from business.get_textile_types import get_textile_types
@@ -28,36 +29,60 @@ class CreateScrapEntity:
     _database: Database = None
     _scrap_entity: Scrap = None
 
-    def __init__(self, scrap_data: dict, database: Database = None):
+    def __init__(self, scrap_data: dict, database: Database = None) -> None:
         """
-
         Args:
-            scrap_data: The dict that contains all the information
-            database:
+            scrap_data: The dict that contains all the information.
+            database: Access to the database.
         """
         self._scrap_data = scrap_data
+        # initialize the database if not passed
         if database is None:
             self._database = Director().create_database()
         else:
             self._database = database
+        # get the textile types and classes
         self._all_textile_classes = get_textile_classes(self._database)
         self._all_textile_types = get_textile_types(self._database)
 
-    def _get_textile_class(self):
+    def _get_textile_class(self) -> str:
+        """
+        Check that the textile class is included in the request and that it's a valid one.
+        Returns:
+            str: The textile class.
+        Raises:
+            MissingTextileClass: When the textile class is missing.
+            InvalidTextileClass: When the textile class is not valid.
+        """
         if "textile-class" not in self._scrap_data.keys():
             raise MissingTextileClass()
         if self._scrap_data["textile-class"] not in self._all_textile_classes:
             raise InvalidTextileClass()
         return self._scrap_data["textile-class"]
 
-    def _get_textile_type(self):
+    def _get_textile_type(self) -> str:
+        """
+        Check that the textile type is included in the request and that it's a valid one.
+        If the textile type is not included, it is assumed that it is "unknown".
+        Returns:
+            str: The textile type.
+        Raises:
+            InvalidTextileType: When the textile type is not valid.
+        """
         if "textile-type" not in self._scrap_data.keys():
             return "unknown"
         if self._scrap_data["textile-type"] not in self._all_textile_types:
             raise InvalidTextileClass()
         return self._scrap_data["textile-type"]
 
-    def _get_color(self):
+    def _get_color(self) -> Color:
+        """
+        Check of the color is included and formats it correctly.
+        Returns:
+            Color: The color of the textile.
+        Raises:
+            MissingTextileColor: When the color is not included.
+        """
         if "color" not in self._scrap_data.keys():
             raise MissingTextileColor()
         if not self._scrap_data["color"].startswith("#"):
@@ -65,21 +90,46 @@ class CreateScrapEntity:
         else:
             return Color(str(self._scrap_data["color"]))
 
-    def _get_owner(self):
+    def _get_owner(self) -> str:
+        """
+        Check if the owner is included
+        Returns:
+            str: The owner of the scrap.
+        """
+        if "owner" not in self._scrap_data.keys():
+            raise MissingScrapOwner()
         return self._scrap_data["owner"]
 
-    def _get_geolocation(self):
+    def _get_geolocation(self) -> [tuple[float, float], None]:
+        """
+        Check of the geolocation is included and converts it to the correct format.
+        Returns:
+            None: If the geolocation is not included
+            tuple[float, float]: Coordinates of the location
+        """
         if "geolocation" not in self._scrap_data.keys():
             return None
         geolocation = tuple(self._scrap_data["geolocation"][1:-1].split(","))
         return geolocation
 
-    def _get_note(self):
+    def _get_note(self) -> str:
+        """
+        Check if the note is included.
+        If not, it returns an empty string.
+        If it included, returns the note content
+        Returns:
+            str: The note content.
+        """
         if "note" not in self._scrap_data.keys():
             return ""
         return self._scrap_data["note"]
 
-    def _get_dimensions(self):
+    def _get_dimensions(self) -> list[np.array]:
+        """
+        Checks if the dimensions are included and convert them into the correct format.
+        Returns:
+            list[np.array]: The dimensions of the scrap.
+        """
         if "dimensions" not in self._scrap_data.keys():
             raise MissingTextileDimensions()
         dimensions = ast.literal_eval(self._scrap_data["dimensions"])
@@ -87,7 +137,13 @@ class CreateScrapEntity:
         return dimensions
 
     @property
-    def scrap_entity(self):
+    def scrap_entity(self) -> Scrap:
+        """
+        Extracts the information of the requests and format them correctly.
+        Create the Scrap entity objects from the information.
+        Returns:
+            Scrap: The scrap information in the entity.
+        """
         if self._scrap_entity is not None:
             return self._scrap_entity
 
