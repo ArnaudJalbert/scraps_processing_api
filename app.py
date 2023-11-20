@@ -5,6 +5,8 @@ from bson.json_util import dumps
 from bson.errors import InvalidId
 from bson.objectid import ObjectId
 from constants import SCRAPS_COLLECTION, EMPTY_DATA, USER_COLLECTION
+from business.create_scrap_entity import CreateScrapEntity
+from business.create_scrap_record import CreateScrapRecord
 from database_director import Director, DEFAULT_DATABASE_TEST
 from flask import Flask, render_template, request
 
@@ -66,13 +68,13 @@ def get_scrap_by_id(_id):
 def create_scrap():
     """
     Creates a new scrap.
+    Template for the PUT request: scraps_processing_url/scraps?textile-class=textile_class&textile-type=textile_type&color=color&owner=owner&geolocation=geolocation&note=note&dimensions=[dimension]
     Returns:
         str: JSON formatted with all the information of the created scrap.
     """
-    # TODO: Use the url query parameters to create a new scrap
-    url_args = request.args
-
-    # TODO: Pass all arguments to the
+    scrap_data = dict(request.args)
+    scrap_entity = CreateScrapEntity(scrap_data, database=database).scrap_entity
+    scrap_record = CreateScrapRecord(scrap_entity, database).execute()
 
     return "Done", 200
 

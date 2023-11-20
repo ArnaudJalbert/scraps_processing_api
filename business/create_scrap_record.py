@@ -8,16 +8,16 @@ class CreateScrapRecord:
     _scrap: Scrap = None
 
     def __init__(self, scrap: Scrap, database: Database = None):
+        self._scrap = scrap
         if database is None:
             self._database = Director().create_database()
         else:
             self._database = database
-        self._scrap = scrap
 
     def _get_dimensions_list(self):
         dimensions = list()
         for dimension in self._scrap.dimensions:
-            dimensions.append([dimension[0], dimension[1]])
+            dimensions.append([float(dimension[0]), float(dimension[1])])
         return dimensions
 
     def _create_scrap_dict(self):
@@ -38,4 +38,6 @@ class CreateScrapRecord:
 
     def execute(self):
         record_dict = self._create_scrap_dict()
-        self._database.get_collection("scraps").insert_one(record_dict)
+        print(record_dict)
+        record = self._database.get_collection("scraps").insert_one(record_dict)
+        return record
