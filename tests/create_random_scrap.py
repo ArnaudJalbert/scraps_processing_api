@@ -1,9 +1,13 @@
+import time
+
 import numpy as np
 import random
 
 from colour import Color
+from business.create_scrap_record import CreateScrapRecord
 from database_director import Director, DEFAULT_DATABASE_TEST
 from entities.scrap import Scrap
+from faker import Faker
 from tests.random_data_points_generator import RandomDataPointsGenerator
 
 
@@ -13,9 +17,11 @@ class CreateTestScraps:
     _textile_classes = None
     _textile_types = None
     _database = None
+    _fake = Faker()
 
     def __init__(self, scraps_amount=0):
         self.scraps_amount = scraps_amount
+        Faker.seed(time.time())
 
     @property
     def database(self):
@@ -67,6 +73,7 @@ class CreateTestScraps:
             textile_class = self.random_textile_class()
             textile_type = self.random_textile_type(textile_class)
             random_points = self.generate_random_points()
+            lat_long = self._fake.local_latlng(country_code="CA")
             scrap = Scrap(
                 id=0,
                 color=Color(self.generate_random_color()),
@@ -75,11 +82,19 @@ class CreateTestScraps:
                 owner="Arnaud Jalbert",
                 fabric_type=textile_type,
                 note="Test Note!",
+                geolocation=(float(lat_long[0]), float(lat_long[1])),
             )
             self.scraps.append(scrap)
 
+    def send_scraps_to_mongo(self):
+        if not self.scraps:
+            return
+
+        for scrap in self.scraps:
+            CreateScrapRecord(scrap, self.database).execute()
+
 
 if __name__ == "__main__":
-    test_scraps = CreateTestScraps(10)
-    test_scraps.create_scraps()
-    print(test_scraps.scraps)
+    create_test_scraps = CreateTestScraps(30)
+    create_test_scraps.create_scraps()
+    create_test_scraps.send_scraps_to_mongo()

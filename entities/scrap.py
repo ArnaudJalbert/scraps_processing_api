@@ -12,6 +12,6 @@ class Scrap:
     fabric_class: str  # synthetic, natural or blend
     dimensions: List[np.array]
     owner: str
-    geolocation: Tuple[float] = None
+    geolocation: Tuple[float, float] = None
     fabric_type: str = None
     note: str = None
