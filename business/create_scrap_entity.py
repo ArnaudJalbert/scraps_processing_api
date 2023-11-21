@@ -147,6 +147,10 @@ class CreateScrapEntity:
         if self._scrap_entity is not None:
             return self._scrap_entity
 
+        # change all %20 to spaces
+        for key, value in self._scrap_data.items():
+            self._scrap_data[key] = str(value).replace("%20", " ")
+
         textile_class = self._get_textile_class()
         textile_type = self._get_textile_type()
         color = self._get_color()
@@ -156,7 +160,6 @@ class CreateScrapEntity:
         dimensions = self._get_dimensions()
 
         return Scrap(
-            id="unknown",
             fabric_class=textile_class,
             fabric_type=textile_type,
             color=color,

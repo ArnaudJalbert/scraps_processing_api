@@ -91,7 +91,7 @@ class CreateTestScraps:
             return
 
         for scrap in self.scraps:
-            CreateScrapRecord(scrap, self.database).execute()
+            CreateScrapRecord(scrap, self.database).create_scrap_record()
 
 
 if __name__ == "__main__":

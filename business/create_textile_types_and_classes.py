@@ -12,31 +12,9 @@ NATURAL_TEXTILE_TYPES = [
     "Angora",
     "Bamboo",
     "Tencel",
-    "Cotton",
-    "Linen",
-    "Wool",
-    "Silk",
-    "Hemp",
-    "Jute",
-    "Ramie",
-    "Alpaca",
-    "Angora",
-    "Bamboo",
-    "Tencel",
 ]
 
 SYNTHETIC_TEXTILE_TYPES = [
-    "Polyester",
-    "Nylon",
-    "Acrylic",
-    "Spandex",
-    "Rayon",
-    "PVC (Polyvinyl chloride)",
-    "Acetate",
-    "Polypropylene",
-    "Modal",
-    "Olefin",
-    "Elastane",
     "Polyester",
     "Nylon",
     "Acrylic",
@@ -71,4 +49,5 @@ def insert_synthetic_textile_types(database):
 
 if __name__ == "__main__":
     db = Director().create_database(DEFAULT_DATABASE_TEST)
-    # use the methods to insert the needed query
+    insert_natural_textile_types(db)
+    insert_synthetic_textile_types(db)

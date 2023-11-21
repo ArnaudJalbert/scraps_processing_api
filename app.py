@@ -1,5 +1,6 @@
 import logging
 import sys
+import time
 
 from bson.json_util import dumps
 from bson.errors import InvalidId
@@ -8,6 +9,7 @@ from constants import SCRAPS_COLLECTION, EMPTY_DATA, USER_COLLECTION
 from business.create_scrap_entity import CreateScrapEntity
 from business.create_scrap_record import CreateScrapRecord
 from database_director import Director, DEFAULT_DATABASE_TEST
+from exceptions.scrap_exceptions import ScrapException
 from flask import Flask, render_template, request
 
 logging.basicConfig(level=logging.CRITICAL)
@@ -72,9 +74,14 @@ def create_scrap():
     Returns:
         str: JSON formatted with all the information of the created scrap.
     """
+    # get the data from the url request
     scrap_data = dict(request.args)
-    scrap_entity = CreateScrapEntity(scrap_data, database=database).scrap_entity
-    scrap_record = CreateScrapRecord(scrap_entity, database).execute()
+    try:
+        scrap_entity = CreateScrapEntity(scrap_data, database=database).scrap_entity
+    except ScrapException as exception:
+        return str(exception), 400
+
+    scrap_record = CreateScrapRecord(scrap_entity, database).create_scrap_record()
 
     return "Done", 200
 
@@ -110,5 +117,22 @@ def get_user_by_name(name):
     return dumps(user), 200
 
 
+@app.route("/upload", methods=["POST"])
+def upload():
+    if "file" not in request.files:
+        print("No file part")
+        return "No file part", 400
+
+    file = request.files["file"]
+    if file.filename == "":
+        print("No selected file")
+        return "No selected file", 400
+
+    if file:
+        file.save(file.filename)  # Save the received image
+        print("Image received and saved successfully!")
+        return "Stored {filename}".format(filename=file.filename), 200
+
+
 if __name__ == "__main__":
-    app.run(debug=True)
+    app.run(debug=True, host="172.20.10.4")
