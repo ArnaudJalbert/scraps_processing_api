@@ -29,6 +29,11 @@ class MissingTextileDimensions(ScrapException):
         super().__init__(message)
 
 
+class MissingImage(ScrapException):
+    def __init__(self, message="Please provide an image of the scrap."):
+        super().__init__(message)
+
+
 class InvalidTextileClass(ScrapException):
     def __init__(
         self,

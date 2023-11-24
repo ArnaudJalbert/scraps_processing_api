@@ -1,4 +1,6 @@
 import ast
+import os.path
+
 import numpy as np
 
 from colour import Color
@@ -10,10 +12,13 @@ from exceptions.scrap_exceptions import (
     MissingTextileColor,
     MissingTextileDimensions,
     MissingScrapOwner,
+    MissingImage,
 )
 from business.get_textile_classes import get_textile_classes
 from business.get_textile_types import get_textile_types
 from pymongo.database import Database
+
+IMAGE_PATH = "./data/scrap_images/{image_name}.png"
 
 
 class CreateScrapEntity:
@@ -110,6 +115,10 @@ class CreateScrapEntity:
         if "geolocation" not in self._scrap_data.keys():
             return None
         geolocation = tuple(self._scrap_data["geolocation"][1:-1].split(","))
+        geolocation = tuple(
+            float(geolocation_point) for geolocation_point in geolocation
+        )
+        print(geolocation)
         return geolocation
 
     def _get_note(self) -> str:
@@ -136,6 +145,21 @@ class CreateScrapEntity:
         dimensions = [np.array(coordinate) for coordinate in dimensions]
         return dimensions
 
+    def _get_image_path(self) -> str:
+        """
+        Checks if image exists and links the patht.
+        Returns:
+            str: The path to the image
+        """
+        if "image" not in self._scrap_data.keys():
+            raise MissingImage()
+
+        image_name = self._scrap_data["image"]
+        image_path = IMAGE_PATH.format(image_name=image_name)
+        if not os.path.exists(image_path):
+            raise FileExistsError("The image does not exists.")
+        return image_path
+
     @property
     def scrap_entity(self) -> Scrap:
         """
@@ -158,6 +182,7 @@ class CreateScrapEntity:
         geolocation = self._get_geolocation()
         note = self._get_note()
         dimensions = self._get_dimensions()
+        image = self._get_image_path()
 
         return Scrap(
             fabric_class=textile_class,
@@ -167,4 +192,5 @@ class CreateScrapEntity:
             geolocation=geolocation,
             note=note,
             dimensions=dimensions,
+            image_path=image,
         )

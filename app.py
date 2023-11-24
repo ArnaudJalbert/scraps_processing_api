@@ -1,6 +1,6 @@
 import logging
+import os
 import sys
-import time
 
 from bson.json_util import dumps
 from bson.errors import InvalidId
@@ -120,19 +120,18 @@ def get_user_by_name(name):
 @app.route("/upload", methods=["POST"])
 def upload():
     if "file" not in request.files:
-        print("No file part")
         return "No file part", 400
 
     file = request.files["file"]
     if file.filename == "":
-        print("No selected file")
         return "No selected file", 400
 
     if file:
-        file.save(file.filename)  # Save the received image
-        print("Image received and saved successfully!")
-        return "Stored {filename}".format(filename=file.filename), 200
+        file.save(
+            os.path.join(".", "data", "scrap_images", file.filename)
+        )  # save the received image
+        return f"Stored {file.filename}", 200
 
 
 if __name__ == "__main__":
-    app.run(debug=True, host="172.20.10.4")
+    app.run(debug=True)

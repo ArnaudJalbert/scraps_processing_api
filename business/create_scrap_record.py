@@ -7,6 +7,7 @@ from pymongo.database import Database
 class CreateScrapRecord:
     _database: Database = None
     _scrap: Scrap = None
+    _request: dict = None
     _record = None
 
     def __init__(self, scrap: Scrap, database: Database = None) -> None:
@@ -22,24 +23,26 @@ class CreateScrapRecord:
             dimensions.append([float(dimension[0]), float(dimension[1])])
         return dimensions
 
-    def _create_scrap_dict(self):
-        scrap_dict = dict()
-        scrap_dict["color"] = self._scrap.color.hex
-        scrap_dict["fabric_class"] = self._scrap.fabric_class
-        scrap_dict["dimensions"] = self._get_dimensions_list()
-        scrap_dict["owner"] = self._scrap.owner
-        if self._scrap.geolocation:
-            scrap_dict["geolocation"] = self._scrap.geolocation
-        if self._scrap.fabric_type:
-            scrap_dict["fabric_type"] = self._scrap.fabric_type
-        if self._scrap.note:
-            scrap_dict["note"] = self._scrap.note
+    @property
+    def scrap_request(self):
+        if self._request is None:
+            self._request = dict()
+            self._request["color"] = self._scrap.color.hex
+            self._request["fabric_class"] = self._scrap.fabric_class
+            self._request["dimensions"] = self._get_dimensions_list()
+            self._request["owner"] = self._scrap.owner
+            self._request["image_path"] = self._scrap.image_path
+            if self._scrap.geolocation:
+                self._request["geolocation"] = self._scrap.geolocation
+            if self._scrap.fabric_type:
+                self._request["fabric_type"] = self._scrap.fabric_type
+            if self._scrap.note:
+                self._request["note"] = self._scrap.note
 
-        return scrap_dict
+        return self._request
 
     def create_scrap_record(self) -> InsertOneResult:
-        record_dict: dict = self._create_scrap_dict()
-        record: InsertOneResult = self._database.get_collection("scraps").insert_one(
-            record_dict
-        )
-        return record
+        self._record: InsertOneResult = self._database.get_collection(
+            "scraps"
+        ).insert_one(self.scrap_request)
+        return self._record

@@ -10,6 +10,8 @@ from entities.scrap import Scrap
 from faker import Faker
 from tests.random_data_points_generator import RandomDataPointsGenerator
 
+TEST_IMAGE_PATH = "../data/scrap_images/test_image.jpg"
+
 
 class CreateTestScraps:
     scraps = list()
@@ -79,10 +81,11 @@ class CreateTestScraps:
                 color=Color(self.generate_random_color()),
                 fabric_class=textile_class,
                 dimensions=random_points,
-                owner="Arnaud Jalbert",
+                owner="00000001",
                 fabric_type=textile_type,
                 note="Test Note!",
                 geolocation=(float(lat_long[0]), float(lat_long[1])),
+                image_path=TEST_IMAGE_PATH,
             )
             self.scraps.append(scrap)
 
@@ -95,6 +98,6 @@ class CreateTestScraps:
 
 
 if __name__ == "__main__":
-    create_test_scraps = CreateTestScraps(30)
+    create_test_scraps = CreateTestScraps(5)
     create_test_scraps.create_scraps()
     create_test_scraps.send_scraps_to_mongo()
