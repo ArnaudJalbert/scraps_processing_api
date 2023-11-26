@@ -20,7 +20,7 @@ class CreateScrapRecord:
     def _get_dimensions_list(self) -> list[list]:
         dimensions = list()
         for dimension in self._scrap.dimensions:
-            dimensions.append([float(dimension[0]), float(dimension[1])])
+            dimensions.append([float(dimension[0]), float(dimension[2])])
         return dimensions
 
     @property

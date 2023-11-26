@@ -16,6 +16,7 @@ from exceptions.scrap_exceptions import (
 )
 from business.get_textile_classes import get_textile_classes
 from business.get_textile_types import get_textile_types
+from business.offset_points import PointsManager
 from pymongo.database import Database
 
 IMAGE_PATH = "./data/scrap_images/{image_name}.png"
@@ -33,6 +34,7 @@ class CreateScrapEntity:
     _scrap_data: dict = None
     _database: Database = None
     _scrap_entity: Scrap = None
+    _points_manager: PointsManager = None
 
     def __init__(self, scrap_data: dict, database: Database = None) -> None:
         """
@@ -143,7 +145,29 @@ class CreateScrapEntity:
             raise MissingTextileDimensions()
         dimensions = ast.literal_eval(self._scrap_data["dimensions"])
         dimensions = [np.array(coordinate) for coordinate in dimensions]
+        self._points_manager = PointsManager(dimensions)
+        dimensions = self._points_manager.get_offset_points()
         return dimensions
+
+    def _get_width(self) -> float:
+        """
+        Returns the width of the shape.
+        Returns:
+            float: The width of the scrap.
+        """
+        if self._points_manager is None:
+            raise MissingTextileDimensions()
+        return self._points_manager.get_shape_width()
+
+    def _get_height(self) -> float:
+        """
+        Returns the height of the shape.
+        Returns:
+            float: The height of the scrap.
+        """
+        if self._points_manager is None:
+            raise MissingTextileDimensions()
+        return self._points_manager.get_shape_height()
 
     def _get_image_path(self) -> str:
         """
@@ -182,6 +206,8 @@ class CreateScrapEntity:
         geolocation = self._get_geolocation()
         note = self._get_note()
         dimensions = self._get_dimensions()
+        width = self._get_width()
+        height = self._get_height()
         image = self._get_image_path()
 
         return Scrap(
@@ -193,4 +219,6 @@ class CreateScrapEntity:
             note=note,
             dimensions=dimensions,
             image_path=image,
+            width=width,
+            height=height,
         )

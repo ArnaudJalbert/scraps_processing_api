@@ -12,6 +12,8 @@ class Scrap:
     dimensions: List[np.array]
     owner: str
     image_path: str
+    width: float
+    height: float
     id: str = None
     geolocation: Tuple[float, float] = None
     fabric_type: str = None
