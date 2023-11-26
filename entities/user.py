@@ -5,11 +5,10 @@ from typing import Set, Dict
 
 @dataclass
 class User:
-    id: str
+    user_id: str
     username: str
-    name: str
     email: str
-    password: str
-    description: str
-    preferences: Dict[str:str]
-    scraps: Set[Scrap]
+    instagram: str
+    password: str = None
+    description: str = None
+    scraps: Set[str] = None

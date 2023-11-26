@@ -9,6 +9,7 @@ from pymongo.database import Database
 DEFAULT_DATABASE = "scraps_processing"
 DEFAULT_DATABASE_TEST = "scraps_processing_test"
 SCRAPS_COLLECTION = "scraps"
+USERS_COLLECTION = "users"
 TEXTILE_TYPES_COLLECTION = "textile_types"
 TEXTILE_CLASSES_COLLECTION = "textile_classes"
 

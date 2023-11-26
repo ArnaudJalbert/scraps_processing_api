@@ -8,8 +8,11 @@ from bson.objectid import ObjectId
 from constants import SCRAPS_COLLECTION, EMPTY_DATA, USER_COLLECTION
 from business.create_scrap_entity import CreateScrapEntity
 from business.create_scrap_record import CreateScrapRecord
+from business.create_user_entity import CreateUserEntity
+from business.create_user_record import CreateUserRecord
 from database_director import Director, DEFAULT_DATABASE_TEST
 from exceptions.scrap_exceptions import ScrapException
+from exceptions.user_exceptions import UserException
 from flask import Flask, render_template, request
 
 logging.basicConfig(level=logging.CRITICAL)
@@ -86,8 +89,8 @@ def create_scrap():
     return "Done", 200
 
 
-@app.post("/scraps/<id>")
-def update_scrap():
+@app.post("/scraps/<scrap_id>")
+def update_scrap(scrap_id):
     """
     Updates an existing scrap.
     Returns:
@@ -96,21 +99,36 @@ def update_scrap():
     # TODO: Use the url query parameters to create a new scrap
     url_args = request.args
 
-    # TODO: Pass all arguments to the
+
+@app.post("/create-user")
+def create_user():
+    # get the data from the url request
+    user_data = dict(request.args)
+
+    try:
+        user_entity = CreateUserEntity(user_data, database).user_entity
+    except UserException as exception:
+        return str(exception), 400
+
+    user_record = CreateUserRecord(user_entity, database).create_user_record()
+
+    return "User Created Successfully!", 200
 
 
-@app.get("/user/<name>")
-def get_user_by_name(name):
+@app.get("/user/<username>")
+def get_user_by_name(username):
     """
     Retrieves a user with their name.
     Args:
-        name: Name of the user to be retrieved.
+        username: Name of the user to be retrieved.
 
     Returns:
         str: JSON formatted string with the scrap data with corresponding id.
     """
     try:
-        user = list(database.get_collection(USER_COLLECTION).find({"name": name}))
+        user = list(
+            database.get_collection(USER_COLLECTION).find({"username": username})
+        )
     except InvalidId:
         return EMPTY_DATA, 204
 
