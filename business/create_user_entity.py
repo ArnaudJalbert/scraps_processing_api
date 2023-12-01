@@ -45,7 +45,7 @@ class CreateUserEntity:
         if username_exists:
             raise UsernameAlreadyUsed()
 
-        return username
+        return username.lower()
 
     def _get_unique_id(self):
         start = 0
@@ -55,7 +55,9 @@ class CreateUserEntity:
         while True:
             # check if the username already exists
             unique_id_exists = list(
-                self._database.get_collection(USERS_COLLECTION).find({"id": unique_id})
+                self._database.get_collection(USERS_COLLECTION).find(
+                    {"user_id": unique_id}
+                )
             )
             if not unique_id_exists:
                 break
@@ -68,7 +70,7 @@ class CreateUserEntity:
             else:
                 unique_id = str(uuid.uuid1())[0:3]
 
-        return unique_id
+        return unique_id.lower()
 
     def _get_email(self):
         if "email" not in self._user_data.keys():
@@ -83,11 +85,11 @@ class CreateUserEntity:
         if email_exists:
             raise EmailAlreadyUsed()
 
-        return email
+        return email.lower()
 
     def _get_password(self):
         if "password" not in self._user_data.keys():
-            raise MissingPassword()
+            return None
 
         password = self._user_data["password"]
 
@@ -117,7 +119,7 @@ class CreateUserEntity:
         if not self._is_ig_account(instagram):
             raise NotAnInstagramAccount()
 
-        return instagram
+        return instagram.lower()
 
     @property
     def user_entity(self) -> User:

@@ -38,6 +38,8 @@ class CreateScrapRecord:
                 self._request["fabric_type"] = self._scrap.fabric_type
             if self._scrap.note:
                 self._request["note"] = self._scrap.note
+            if self._scrap.id:
+                self._request["id"] = self._scrap.id
 
         return self._request
 

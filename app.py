@@ -1,3 +1,4 @@
+import json
 import logging
 import os
 import sys
@@ -27,10 +28,8 @@ def create_app():
 
 
 app = create_app()
-if test_mode():
-    database = Director().create_database(DEFAULT_DATABASE_TEST)
-else:
-    database = Director().create_database()
+# TODO: replace this with real database
+database = Director().create_database(DEFAULT_DATABASE_TEST)
 
 
 @app.route("/")
@@ -45,8 +44,9 @@ def get_scraps():
     Returns:
         str: JSON formatted string with the scraps' data.
     """
-    scraps = list(database.get_collection(SCRAPS_COLLECTION).find())
-    return dumps(scraps, indent=2), 200
+    url_args = dict(request.args)
+    scraps = list(database.get_collection(SCRAPS_COLLECTION).find(url_args))
+    return dumps(scraps), 200
 
 
 @app.get("/scraps/<_id>")
@@ -80,24 +80,35 @@ def create_scrap():
     # get the data from the url request
     scrap_data = dict(request.args)
     try:
+        # create the scrap entity
         scrap_entity = CreateScrapEntity(scrap_data, database=database).scrap_entity
     except ScrapException as exception:
         return str(exception), 400
 
     scrap_record = CreateScrapRecord(scrap_entity, database).create_scrap_record()
 
-    return "Done", 200
+    scrap_data = get_scrap_by_id(scrap_record.inserted_id)
+
+    return scrap_data[0], 200
 
 
-@app.post("/scraps/<scrap_id>")
+@app.put("/scraps/<scrap_id>")
 def update_scrap(scrap_id):
     """
     Updates an existing scrap.
     Returns:
         str: JSON formatted string with all the information of the updated scrap.
     """
-    # TODO: Use the url query parameters to create a new scrap
-    url_args = request.args
+    url_args = dict(request.args)
+
+    scrap = {"id": scrap_id}
+    update = {"$set": {url_args["key"]: url_args["value"]}}
+
+    database.get_collection(SCRAPS_COLLECTION).update_one(scrap, update)
+
+    updated_scrap = list(database.get_collection(SCRAPS_COLLECTION).find(scrap))
+
+    return dumps(updated_scrap), 200
 
 
 @app.post("/create-user")
@@ -108,31 +119,104 @@ def create_user():
     try:
         user_entity = CreateUserEntity(user_data, database).user_entity
     except UserException as exception:
+        print(exception)
         return str(exception), 400
 
-    user_record = CreateUserRecord(user_entity, database).create_user_record()
+    response = CreateUserRecord(user_entity, database).create_user_record()
 
-    return "User Created Successfully!", 200
+    user = list(
+        database.get_collection(USER_COLLECTION).find(
+            "_id", ObjectId(response.inserted_id)
+        )
+    )
+
+    return dumps(user), 200
 
 
 @app.get("/user/<username>")
 def get_user_by_name(username):
     """
-    Retrieves a user with their name.
+    Retrieves a user with their username, email or instagram.
     Args:
-        username: Name of the user to be retrieved.
+        username: Name, email or instagram of the user to be retrieved.
 
     Returns:
         str: JSON formatted string with the scrap data with corresponding id.
     """
     try:
         user = list(
-            database.get_collection(USER_COLLECTION).find({"username": username})
+            database.get_collection(USER_COLLECTION).find(
+                {"username": username.lower()}
+            )
+        )
+        email = list(
+            database.get_collection(USER_COLLECTION).find({"email": username.lower()})
+        )
+        instagram = list(
+            database.get_collection(USER_COLLECTION).find(
+                {"instagram": username.lower()}
+            )
+        )
+        user_id = list(
+            database.get_collection(USER_COLLECTION).find({"user_id": username})
         )
     except InvalidId:
         return EMPTY_DATA, 204
 
-    return dumps(user), 200
+    print(user[0])
+
+    if user:
+        return dumps(user[0]), 200
+    elif email:
+        return dumps(email[0]), 200
+    elif instagram:
+        return dumps(instagram[0]), 200
+    elif user_id:
+        return dumps(user_id[0]), 200
+    else:
+        return EMPTY_DATA, 204
+
+
+@app.get("/user/<username>/user-id")
+def get_user_id_by_name(username):
+    """
+    Retrieves a user with their username, email or instagram.
+    Args:
+        username: Name, email or instagram of the user to be retrieved.
+
+    Returns:
+        str: JSON formatted string with the scrap data with corresponding id.
+    """
+    try:
+        user = list(
+            database.get_collection(USER_COLLECTION).find(
+                {"username": username.lower()}
+            )
+        )
+        email = list(
+            database.get_collection(USER_COLLECTION).find({"email": username.lower()})
+        )
+        instagram = list(
+            database.get_collection(USER_COLLECTION).find(
+                {"instagram": username.lower()}
+            )
+        )
+        user_id = list(
+            database.get_collection(USER_COLLECTION).find({"user_id": username})
+        )
+    except InvalidId:
+        return EMPTY_DATA, 204
+
+    if user:
+        return user[0]["user_id"], 200
+    elif email:
+        return email[0]["user_id"], 200
+    elif instagram:
+        return instagram[0]["user_id"], 200
+    elif user_id:
+        return dumps(user_id[0]["user_id"]), 200
+    else:
+        return EMPTY_DATA, 204
 
 
 @app.route("/upload", methods=["POST"])
@@ -152,4 +236,4 @@ def upload():
 
 
 if __name__ == "__main__":
-    app.run(debug=True, host="192.168.0.10")
+    app.run(debug=True)

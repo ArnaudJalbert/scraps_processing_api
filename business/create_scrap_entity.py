@@ -4,7 +4,7 @@ import os.path
 import numpy as np
 
 from colour import Color
-from database_director import Director
+from database_director import Director, SCRAPS_COLLECTION
 from entities.scrap import Scrap
 from exceptions.scrap_exceptions import (
     MissingTextileClass,
@@ -33,10 +33,13 @@ class CreateScrapEntity:
 
     _scrap_data: dict = None
     _database: Database = None
+    _ignore_image = None
     _scrap_entity: Scrap = None
     _points_manager: PointsManager = None
 
-    def __init__(self, scrap_data: dict, database: Database = None) -> None:
+    def __init__(
+        self, scrap_data: dict, database: Database = None, ignore_image=False
+    ) -> None:
         """
         Args:
             scrap_data: The dict that contains all the information.
@@ -51,6 +54,7 @@ class CreateScrapEntity:
         # get the textile types and classes
         self._all_textile_classes = get_textile_classes(self._database)
         self._all_textile_types = get_textile_types(self._database)
+        self._ignore_image = ignore_image
 
     def _get_textile_class(self) -> str:
         """
@@ -65,7 +69,7 @@ class CreateScrapEntity:
             raise MissingTextileClass()
         if self._scrap_data["textile-class"] not in self._all_textile_classes:
             raise InvalidTextileClass()
-        return self._scrap_data["textile-class"]
+        return self._scrap_data["textile-class"].lower()
 
     def _get_textile_type(self) -> str:
         """
@@ -80,7 +84,7 @@ class CreateScrapEntity:
             return "unknown"
         if self._scrap_data["textile-type"] not in self._all_textile_types:
             raise InvalidTextileClass()
-        return self._scrap_data["textile-type"]
+        return self._scrap_data["textile-type"].lower()
 
     def _get_color(self) -> Color:
         """
@@ -105,7 +109,7 @@ class CreateScrapEntity:
         """
         if "owner" not in self._scrap_data.keys():
             raise MissingScrapOwner()
-        return self._scrap_data["owner"]
+        return self._scrap_data["owner"].lower()
 
     def _get_geolocation(self) -> [tuple[float, float], None]:
         """
@@ -120,7 +124,6 @@ class CreateScrapEntity:
         geolocation = tuple(
             float(geolocation_point) for geolocation_point in geolocation
         )
-        print(geolocation)
         return geolocation
 
     def _get_note(self) -> str:
@@ -133,7 +136,7 @@ class CreateScrapEntity:
         """
         if "note" not in self._scrap_data.keys():
             return ""
-        return self._scrap_data["note"]
+        return self._scrap_data["note"].lower()
 
     def _get_dimensions(self) -> list[np.array]:
         """
@@ -175,6 +178,9 @@ class CreateScrapEntity:
         Returns:
             str: The path to the image
         """
+        if self._ignore_image:
+            return "test_image"
+
         if "image" not in self._scrap_data.keys():
             raise MissingImage()
 
@@ -183,6 +189,23 @@ class CreateScrapEntity:
         if not os.path.exists(image_path):
             raise FileExistsError("The image does not exists.")
         return image_path
+
+    def _generate_id(self, owner) -> str:
+        """
+        Checks if image exists and links the path.
+        Returns:
+            str: The path to the image
+        """
+
+        owner_scraps = list(
+            self._database.get_collection(SCRAPS_COLLECTION).find({"owner": owner})
+        )
+
+        number = len(owner_scraps) + 1
+
+        generated_id = f"{owner}-{number}"
+
+        return generated_id.lower()
 
     @property
     def scrap_entity(self) -> Scrap:
@@ -209,6 +232,7 @@ class CreateScrapEntity:
         width = self._get_width()
         height = self._get_height()
         image = self._get_image_path()
+        scrap_id = self._generate_id(owner)
 
         return Scrap(
             fabric_class=textile_class,
@@ -221,4 +245,5 @@ class CreateScrapEntity:
             image_path=image,
             width=width,
             height=height,
+            id=scrap_id,
         )
