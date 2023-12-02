@@ -102,9 +102,6 @@ class CreateUserEntity:
         )
 
     def _get_instagram_handle(self):
-        if "instagram" not in self._user_data.keys():
-            raise MissingInstagram()
-
         instagram = self._user_data["instagram"]
 
         # check if the username already exists
