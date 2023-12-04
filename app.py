@@ -1,7 +1,8 @@
-import json
+import cloudinary.uploader
 import logging
 import os
 import sys
+import time
 
 from bson.json_util import dumps
 from bson.errors import InvalidId
@@ -21,8 +22,18 @@ from exceptions.scrap_exceptions import ScrapException
 from exceptions.user_exceptions import UserException
 from flask import Flask, render_template, request, send_file
 from geopy import distance
+from dotenv import load_dotenv
 
 logging.basicConfig(level=logging.CRITICAL)
+
+load_dotenv()
+
+
+cloudinary.config(
+    cloud_name="dm2ernrfn",
+    api_key="535384942931621",
+    api_secret=os.environ.get("CLOUDINARY_API_KEY"),
+)
 
 
 def test_mode():
@@ -153,10 +164,11 @@ def get_scrap_image_by_id(scrap_id):
         database.get_collection(SCRAPS_COLLECTION).find({"id": scrap_id})
     )[0]["image_path"]
 
-    if os.path.exists(scrap_image):
-        return send_file(scrap_image), 200
-    else:
-        return "no image for this scrap", 204
+    image_url = cloudinary.CloudinaryImage(scrap_image).build_url()
+    image_url += ".png"
+
+    return dumps(image_url), 200
+
 
 
 @app.post("/create-user")
@@ -278,9 +290,12 @@ def upload():
         return "No selected file", 400
 
     if file:
-        file.save(
-            os.path.join(".", "data", "scrap_images", file.filename)
-        )  # save the received image
+        path = os.path.join(".", "data", "scrap_images", file.filename)
+        file.save(path)  # save the received image
+        while not os.path.exists(path):
+            time.sleep(1)
+        response = cloudinary.uploader.upload(path, public_id=file.filename.replace(".png", ""))
+        print(response)
         return f"Stored {file.filename}", 200
 
 
@@ -349,4 +364,4 @@ def get_textile_types_by_class(textile_class):
 
 
 if __name__ == "__main__":
-    app.run(debug=True)
+    app.run(debug=True, host="192.168.0.10")

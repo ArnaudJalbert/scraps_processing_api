@@ -1,9 +1,9 @@
-# fly.toml app configuration file generated for scraps-processing-api on 2023-11-30T16:59:51-05:00
+# fly.toml app configuration file generated for scraps-processing-api-delicate-pond-5077 on 2023-12-03T21:31:20-05:00
 #
 # See https://fly.io/docs/reference/configuration/ for information about how to use this file.
 #
 
-app = "scraps-processing-api"
+app = "scraps-processing-api-delicate-pond-5077"
 primary_region = "yul"
 
 [build]
