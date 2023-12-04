@@ -47,7 +47,12 @@ def insert_synthetic_textile_types(database):
         )
 
 
+def insert_textile_classes(database):
+    textile_types_collection = database.get_collection("textile_classes")
+    for textile_class in TEXTILE_CLASSES:
+        textile_types_collection.insert_one({"textile_class": textile_class.lower()})
+
+
 if __name__ == "__main__":
-    db = Director().create_database(DEFAULT_DATABASE_TEST)
-    insert_natural_textile_types(db)
-    insert_synthetic_textile_types(db)
+    db = Director().create_database()
+    insert_textile_classes(db)

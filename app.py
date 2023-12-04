@@ -34,8 +34,7 @@ def create_app():
 
 
 app = create_app()
-# TODO: replace this with real database
-database = Director().create_database(DEFAULT_DATABASE_TEST)
+database = Director().create_database()
 
 
 @app.route("/")
