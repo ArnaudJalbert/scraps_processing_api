@@ -19,7 +19,7 @@ from database_director import (
 )
 from exceptions.scrap_exceptions import ScrapException
 from exceptions.user_exceptions import UserException
-from flask import Flask, render_template, request
+from flask import Flask, render_template, request, send_file
 from geopy import distance
 
 logging.basicConfig(level=logging.CRITICAL)
@@ -92,6 +92,9 @@ def get_scrap_by_id(_id):
         scrap = list(
             database.get_collection(SCRAPS_COLLECTION).find({"_id": ObjectId(_id)})
         )
+        # try with scrap id instead
+        if not scrap:
+            scrap = list(database.get_collection(SCRAPS_COLLECTION).find({"id": _id}))
     except InvalidId:
         return EMPTY_DATA, 204
 
@@ -138,6 +141,23 @@ def update_scrap(scrap_id):
     updated_scrap = list(database.get_collection(SCRAPS_COLLECTION).find(scrap))
 
     return dumps(updated_scrap), 200
+
+
+@app.get("/scraps/<scrap_id>/image")
+def get_scrap_image_by_id(scrap_id):
+    """
+    Get the current textile types that are available.
+    Returns:
+        str: json formatted string of all textile classes
+    """
+    scrap_image = list(
+        database.get_collection(SCRAPS_COLLECTION).find({"id": scrap_id})
+    )[0]["image_path"]
+
+    if os.path.exists(scrap_image):
+        return send_file(scrap_image), 200
+    else:
+        return "no image for this scrap", 204
 
 
 @app.post("/create-user")
