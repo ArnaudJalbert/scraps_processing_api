@@ -185,9 +185,8 @@ class CreateScrapEntity:
             raise MissingImage()
 
         image_name = self._scrap_data["image"]
-        image_path = IMAGE_PATH.format(image_name=image_name)
-        if not os.path.exists(image_path):
-            raise FileExistsError("The image does not exists.")
+        image_path = image_name
+
         return image_path
 
     def _generate_id(self, owner) -> str:

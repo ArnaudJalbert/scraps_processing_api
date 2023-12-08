@@ -1,7 +1,8 @@
-import json
+import cloudinary.uploader
 import logging
 import os
 import sys
+import time
 
 from bson.json_util import dumps
 from bson.errors import InvalidId
@@ -11,12 +12,28 @@ from business.create_scrap_entity import CreateScrapEntity
 from business.create_scrap_record import CreateScrapRecord
 from business.create_user_entity import CreateUserEntity
 from business.create_user_record import CreateUserRecord
-from database_director import Director, DEFAULT_DATABASE_TEST
+from database_director import (
+    Director,
+    DEFAULT_DATABASE_TEST,
+    TEXTILE_CLASSES_COLLECTION,
+    TEXTILE_TYPES_COLLECTION,
+)
 from exceptions.scrap_exceptions import ScrapException
 from exceptions.user_exceptions import UserException
-from flask import Flask, render_template, request
+from flask import Flask, render_template, request, send_file
+from geopy import distance
+from dotenv import load_dotenv
 
 logging.basicConfig(level=logging.CRITICAL)
+
+load_dotenv()
+
+
+cloudinary.config(
+    cloud_name="dm2ernrfn",
+    api_key="535384942931621",
+    api_secret=os.environ.get("CLOUDINARY_API_KEY"),
+)
 
 
 def test_mode():
@@ -28,8 +45,7 @@ def create_app():
 
 
 app = create_app()
-# TODO: replace this with real database
-database = Director().create_database(DEFAULT_DATABASE_TEST)
+database = Director().create_database()
 
 
 @app.route("/")
@@ -45,8 +61,31 @@ def get_scraps():
         str: JSON formatted string with the scraps' data.
     """
     url_args = dict(request.args)
-    scraps = list(database.get_collection(SCRAPS_COLLECTION).find(url_args))
-    return dumps(scraps), 200
+    mongo_filter = dict(url_args)
+    # remove distance information
+    mongo_filter.pop("distance", None)
+    mongo_filter.pop("longitude", None)
+    mongo_filter.pop("latitude", None)
+    scraps = list(database.get_collection(SCRAPS_COLLECTION).find(mongo_filter))
+    # check if distance is filtered
+    if "distance" not in url_args.keys():
+        return dumps(scraps), 200
+
+    close_scraps = list()
+    for scrap in scraps:
+        if "geolocation" not in scrap.keys():
+            close_scraps.append(scrap)
+            continue
+        origin = (float(url_args["latitude"]), float(url_args["longitude"]))
+        scrap_location = (
+            float(scrap["geolocation"][0]),
+            float(scrap["geolocation"][1]),
+        )
+        scrap_distance = distance.distance(origin, scrap_location).km
+        print(scrap_distance)
+        if scrap_distance < float(url_args["distance"]):
+            close_scraps.append(scrap)
+    return dumps(close_scraps), 200
 
 
 @app.get("/scraps/<_id>")
@@ -63,6 +102,9 @@ def get_scrap_by_id(_id):
         scrap = list(
             database.get_collection(SCRAPS_COLLECTION).find({"_id": ObjectId(_id)})
         )
+        # try with scrap id instead
+        if not scrap:
+            scrap = list(database.get_collection(SCRAPS_COLLECTION).find({"id": _id}))
     except InvalidId:
         return EMPTY_DATA, 204
 
@@ -111,6 +153,23 @@ def update_scrap(scrap_id):
     return dumps(updated_scrap), 200
 
 
+@app.get("/scraps/<scrap_id>/image")
+def get_scrap_image_by_id(scrap_id):
+    """
+    Get the current textile types that are available.
+    Returns:
+        str: json formatted string of all textile classes
+    """
+    scrap_image = list(
+        database.get_collection(SCRAPS_COLLECTION).find({"id": scrap_id})
+    )[0]["image_path"]
+
+    image_url = cloudinary.CloudinaryImage(scrap_image).build_url()
+    image_url += ".png"
+
+    return dumps(image_url), 200
+
+
 @app.post("/create-user")
 def create_user():
     # get the data from the url request
@@ -119,14 +178,13 @@ def create_user():
     try:
         user_entity = CreateUserEntity(user_data, database).user_entity
     except UserException as exception:
-        print(exception)
         return str(exception), 400
 
     response = CreateUserRecord(user_entity, database).create_user_record()
 
     user = list(
         database.get_collection(USER_COLLECTION).find(
-            "_id", ObjectId(response.inserted_id)
+            {"_id": ObjectId(str(response.inserted_id))}
         )
     )
 
@@ -162,8 +220,10 @@ def get_user_by_name(username):
         )
     except InvalidId:
         return EMPTY_DATA, 204
+    except Exception as exception:
+        return str(exception), 400
 
-    print(user[0])
+    print(instagram)
 
     if user:
         return dumps(user[0]), 200
@@ -229,10 +289,78 @@ def upload():
         return "No selected file", 400
 
     if file:
-        file.save(
-            os.path.join(".", "data", "scrap_images", file.filename)
-        )  # save the received image
+        path = os.path.join(".", "data", "scrap_images", file.filename)
+        file.save(path)  # save the received image
+        while not os.path.exists(path):
+            time.sleep(1)
+        response = cloudinary.uploader.upload(
+            path, public_id=file.filename.replace(".png", "")
+        )
         return f"Stored {file.filename}", 200
+
+
+@app.get("/textile-classes")
+def get_textile_classes():
+    """
+    Get the current textile classes that are available.
+    Returns:
+        str: json formatted string of all textile classes
+    """
+    try:
+        textile_classes_dict = list(
+            database.get_collection(TEXTILE_CLASSES_COLLECTION).find(
+                {}, {"textile_class": 1, "_id": 0}
+            )
+        )
+    except Exception as exception:
+        return str(exception), 204
+    textile_classes = list()
+
+    # get only the values not the whole dict
+    for textile_class in textile_classes_dict:
+        value = textile_class["textile_class"]
+        textile_classes.append(value)
+
+    return dumps(textile_classes), 200
+
+
+@app.get("/textile-types")
+def get_textile_types(textile_class=None):
+    """
+    Get the current textile types that are available.
+    Returns:
+        str: json formatted string of all textile classes
+    """
+    try:
+        if textile_class:
+            textile_filter = {"textile_class": textile_class}
+        else:
+            textile_filter = {}
+        textile_types_dict = list(
+            database.get_collection(TEXTILE_TYPES_COLLECTION).find(
+                textile_filter, {"textile_type": 1, "_id": 0}
+            )
+        )
+    except Exception as exception:
+        return str(exception), 204
+    textile_types = list()
+
+    # get only the values not the whole dict
+    for textile_type in textile_types_dict:
+        value = textile_type["textile_type"]
+        textile_types.append(value)
+
+    return dumps(textile_types), 200
+
+
+@app.get("/textile-types/<textile_class>")
+def get_textile_types_by_class(textile_class):
+    """
+    Get the current textile types that are available.
+    Returns:
+        str: json formatted string of all textile classes
+    """
+    return get_textile_types(textile_class)
 
 
 if __name__ == "__main__":
