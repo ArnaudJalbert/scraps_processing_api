@@ -169,7 +169,7 @@ class RandomDataPointsGenerator:
         axe.set_xlabel("X Label")
         axe.set_ylabel("Y Label")
         axe.set_zlabel("Z Label")
-        axe.set_ylim(0, 1)
+        axe.set_ylim(0, 5)
         axe.set_title("3D Scatter Plot")
         plt.show()
 

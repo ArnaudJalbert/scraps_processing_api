@@ -170,7 +170,6 @@ def get_scrap_image_by_id(scrap_id):
     return dumps(image_url), 200
 
 
-
 @app.post("/create-user")
 def create_user():
     # get the data from the url request
@@ -294,8 +293,9 @@ def upload():
         file.save(path)  # save the received image
         while not os.path.exists(path):
             time.sleep(1)
-        response = cloudinary.uploader.upload(path, public_id=file.filename.replace(".png", ""))
-        print(response)
+        response = cloudinary.uploader.upload(
+            path, public_id=file.filename.replace(".png", "")
+        )
         return f"Stored {file.filename}", 200
 
 
@@ -364,4 +364,4 @@ def get_textile_types_by_class(textile_class):
 
 
 if __name__ == "__main__":
-    app.run(debug=True, host="192.168.0.10")
+    app.run(debug=True)
